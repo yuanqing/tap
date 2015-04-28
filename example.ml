@@ -1,9 +1,9 @@
 open Tap;;
 
-test "example" (fun _ ->
+test "example" (fun t ->
 
-  equal 42 42;
-  not_equal 42 0;
-  throws Not_found (fun _ -> raise Not_found);
+  t.equal 42 42;
+  t.not_equal 42 0;
+  t.throws Not_found (fun () -> raise Not_found);
 
 );
