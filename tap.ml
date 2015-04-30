@@ -26,7 +26,7 @@ let fail ?(msg="") () =
 let throws ?(msg="") (expected_exn:exn) (fn:unit -> 'a) =
   try
     let _ = fn () in
-    raise Not_found
+    raise Not_ok
   with
     | Not_ok ->
       result false msg
