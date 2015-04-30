@@ -1,43 +1,51 @@
 exception Not_ok
 
+let has_failure = ref false
+
 let result =
   let count = ref 0 in
   fun (is_ok:bool) (msg:string) ->
     let _ = incr count in
-    let _ = print_string (if is_ok then "ok" else "not ok") in
-    print_endline (" " ^ (string_of_int !count) ^ " " ^ msg)
+    let is_ok =
+      if is_ok then
+        "ok"
+      else
+        let _ = has_failure := true in
+        "not ok" in
+    print_endline (String.trim (Printf.sprintf ("%s %d %s") is_ok !count msg))
 
-type t = {
-  equal: 'a. ?msg:string -> 'a -> 'a -> unit;
-  not_equal: 'a. ?msg:string -> 'a -> 'a -> unit;
-  fail: 'a. ?msg:string -> unit -> unit;
-  throws: 'a. ?msg:string -> exn -> (unit -> 'a) -> unit;
-}
+let equal ?(msg="") x y =
+  result (x = y) msg
 
-let t = {
-  equal = (fun ?(msg="equal") x y ->
-    result (x = y) msg
-  );
-  not_equal = (fun ?(msg="not equal") x y ->
-    result (x <> y) msg
-  );
-  fail = (fun ?(msg="not equal") () ->
-    result false msg
-  );
-  throws = (fun ?(msg="throws") expected_exn fn ->
-    try
-      let _ = fn () in
-      raise Not_ok
-    with
-      | Not_ok ->
-        result false msg
-      | actual_exn when expected_exn <> actual_exn ->
-        result false msg
-      | _ ->
-        result true msg
-  );
-}
+let not_equal ?(msg="") x y =
+  result (x <> y) msg
 
-let test (name:string) (fn:'a -> unit) =
-  let _ = print_endline ("# " ^ name) in
-  fn t
+let fail ?(msg="") () =
+  result false msg
+
+let throws ?(msg="") (expected_exn:exn) (fn:unit -> 'a) =
+  try
+    let _ = fn () in
+    raise Not_found
+  with
+    | Not_ok ->
+      result false msg
+    | actual_exn when expected_exn <> actual_exn ->
+      result false msg
+    | _ ->
+      result true msg
+
+let test (name:string) (fn:unit -> unit) =
+  let _ = Printf.printf "# %s\n" name in
+  fn ()
+
+let has_exited = ref false
+
+let _ = at_exit (fun x ->
+  if !has_exited then
+    ()
+  else
+    let _ = has_exited := true in
+    let _ = exit (if !has_failure then 1 else 0) in
+    ()
+)
