@@ -1,5 +1,3 @@
-TAP := tap.ml
-EXAMPLE := example/*.ml
 OO := ocamlfind ocamlopt -g
 
 all: example.out
@@ -11,7 +9,7 @@ tap.cmi: tap.mli
 tap.cmx: tap.ml tap.cmi
 	@$(OO) -c $<
 
-example.out: tap.cmx $(EXAMPLE)
+example.out: tap.cmx example/*.ml
 	@$(OO) -annot $^ -o $@
 
 clean:
