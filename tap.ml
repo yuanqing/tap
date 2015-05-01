@@ -1,6 +1,11 @@
-exception Not_ok
-
 let _ = print_endline "TAP version 13"
+
+let test (name:string) (fn:unit -> unit) =
+  let _ = Printf.printf "# %s\n" name in
+  fn ()
+
+let skip (_:string) (_:unit -> unit) =
+  ()
 
 let has_failure = ref false
 
@@ -16,14 +21,39 @@ let result =
         "not ok" in
     print_endline (String.trim (Printf.sprintf ("%s %d %s") is_ok !count msg))
 
+let has_exited = ref false
+
+let _ = at_exit (fun x ->
+  if !has_exited then
+    ()
+  else
+    let _ = has_exited := true in
+    let _ = exit (if !has_failure then 1 else 0) in
+    ()
+)
+
+let ok ?(msg="") x =
+  result (x = true) msg
+
+let not_ok ?(msg="") x =
+  result (x = false) msg
+
 let equal ?(msg="") x y =
   result (x = y) msg
 
 let not_equal ?(msg="") x y =
   result (x <> y) msg
 
+let same ?(msg="") x y =
+  result (x == y) msg
+
+let not_same ?(msg="") x y =
+  result (x != y) msg
+
 let fail ?(msg="") () =
   result false msg
+
+exception Not_ok
 
 let throws ?(msg="") (expected_exn:exn) (fn:unit -> 'a) =
   try
@@ -37,20 +67,9 @@ let throws ?(msg="") (expected_exn:exn) (fn:unit -> 'a) =
     | _ ->
       result true msg
 
-let test (name:string) (fn:unit -> unit) =
-  let _ = Printf.printf "# %s\n" name in
-  fn ()
-
-let skip _ _ =
-  ()
-
-let has_exited = ref false
-
-let _ = at_exit (fun x ->
-  if !has_exited then
-    ()
-  else
-    let _ = has_exited := true in
-    let _ = exit (if !has_failure then 1 else 0) in
-    ()
-)
+let does_not_throw ?(msg="") (fn:unit -> 'a) =
+  try
+    let _ = fn () in
+    result true msg
+  with _ ->
+    result false msg
