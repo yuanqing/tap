@@ -7,4 +7,8 @@ test "foo" (fun _ ->
     throws Not_found (fun () -> raise Not_found);
   );
 
+  skip "skipped" (fun _ ->
+    fail ();
+  );
+
 );

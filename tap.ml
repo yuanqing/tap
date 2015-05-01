@@ -39,6 +39,9 @@ let test (name:string) (fn:unit -> unit) =
   let _ = Printf.printf "# %s\n" name in
   fn ()
 
+let skip _ _ =
+  ()
+
 let has_exited = ref false
 
 let _ = at_exit (fun x ->
