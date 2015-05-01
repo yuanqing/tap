@@ -1,5 +1,7 @@
 exception Not_ok
 
+let _ = print_endline "TAP version 13"
+
 let has_failure = ref false
 
 let result =
