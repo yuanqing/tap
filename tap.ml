@@ -10,16 +10,15 @@ let skip (_:string) (_:unit -> unit) =
 let num_test = ref 0
 let num_fail = ref 0
 
-let result =
-  fun (is_ok:bool) (msg:string) ->
-    let _ = incr num_test in
-    let is_ok =
-      if is_ok then
-        "ok"
-      else
-        let _ = incr num_fail in
-        "not ok" in
-    print_endline (String.trim (Printf.sprintf ("%s %d %s") is_ok !num_test msg))
+let result (is_ok:bool) (msg:string) : unit =
+  let is_ok =
+    if is_ok then
+      "ok"
+    else
+      let _ = incr num_fail in
+      "not ok" in
+  let _ = incr num_test in
+  print_endline (String.trim (Printf.sprintf ("%s %d %s") is_ok !num_test msg))
 
 let has_exited = ref false
 
