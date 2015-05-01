@@ -7,19 +7,19 @@ let test (name:string) (fn:unit -> unit) =
 let skip (_:string) (_:unit -> unit) =
   ()
 
-let has_failure = ref false
+let num_test = ref 0
+let num_fail = ref 0
 
 let result =
-  let count = ref 0 in
   fun (is_ok:bool) (msg:string) ->
-    let _ = incr count in
+    let _ = incr num_test in
     let is_ok =
       if is_ok then
         "ok"
       else
-        let _ = has_failure := true in
+        let _ = incr num_fail in
         "not ok" in
-    print_endline (String.trim (Printf.sprintf ("%s %d %s") is_ok !count msg))
+    print_endline (String.trim (Printf.sprintf ("%s %d %s") is_ok !num_test msg))
 
 let has_exited = ref false
 
@@ -28,7 +28,12 @@ let _ = at_exit (fun x ->
     ()
   else
     let _ = has_exited := true in
-    let _ = exit (if !has_failure then 1 else 0) in
+    let num_test = !num_test in
+    let num_fail = !num_fail in
+    let _ = Printf.printf ("# tests %d\n") num_test in
+    let _ = Printf.printf ("# pass  %d\n") (num_test - num_fail) in
+    let _ = Printf.printf ("# fail  %d\n") num_fail in
+    let _ = exit (if num_fail = 0 then 0 else 1) in
     ()
 )
 
