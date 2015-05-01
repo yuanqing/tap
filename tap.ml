@@ -32,30 +32,30 @@ let _ = at_exit (fun x ->
     ()
 )
 
-let ok ?(msg="") x =
+let ok ?(msg="ok") x =
   result (x = true) msg
 
-let not_ok ?(msg="") x =
+let not_ok ?(msg="not ok") x =
   result (x = false) msg
 
-let equal ?(msg="") x y =
+let equal ?(msg="equal") x y =
   result (x = y) msg
 
-let not_equal ?(msg="") x y =
+let not_equal ?(msg="not equal") x y =
   result (x <> y) msg
 
-let same ?(msg="") x y =
+let same ?(msg="same") x y =
   result (x == y) msg
 
-let not_same ?(msg="") x y =
+let not_same ?(msg="not same") x y =
   result (x != y) msg
 
-let fail ?(msg="") () =
+let fail ?(msg="fail") () =
   result false msg
 
 exception Not_ok
 
-let throws ?(msg="") (expected_exn:exn) (fn:unit -> 'a) =
+let throws ?(msg="throws") (expected_exn:exn) (fn:unit -> 'a) =
   try
     let _ = fn () in
     raise Not_ok
@@ -67,7 +67,7 @@ let throws ?(msg="") (expected_exn:exn) (fn:unit -> 'a) =
     | _ ->
       result true msg
 
-let does_not_throw ?(msg="") (fn:unit -> 'a) =
+let does_not_throw ?(msg="does not throw") (fn:unit -> 'a) =
   try
     let _ = fn () in
     result true msg
