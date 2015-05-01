@@ -50,6 +50,9 @@ let same ?(msg="same") x y =
 let not_same ?(msg="not same") x y =
   result (x != y) msg
 
+let pass ?(msg="pass") () =
+  result true msg
+
 let fail ?(msg="fail") () =
   result false msg
 
