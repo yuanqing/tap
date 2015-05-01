@@ -30,6 +30,7 @@ let _ = at_exit (fun x ->
     let _ = has_exited := true in
     let num_test = !num_test in
     let num_fail = !num_fail in
+    let _ = Printf.printf ("1..%d\n") num_test in
     let _ = Printf.printf ("# tests %d\n") num_test in
     let _ = Printf.printf ("# pass  %d\n") (num_test - num_fail) in
     let _ = Printf.printf ("# fail  %d\n") num_fail in
