@@ -82,3 +82,6 @@ let does_not_throw ?(msg="does not throw") (fn:unit -> 'a) =
   with
     | _ ->
       result false msg
+
+let run _ =
+  ()

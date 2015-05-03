@@ -1,0 +1,3 @@
+Tap.run [
+  Foo.suite
+]

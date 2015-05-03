@@ -10,3 +10,4 @@ val pass : ?msg:string -> unit -> unit
 val fail : ?msg:string -> unit -> unit
 val throws : ?msg:string -> exn -> (unit -> 'a) -> unit
 val does_not_throw : ?msg:string -> (unit -> 'a) -> unit
+val run : (unit -> unit) list -> unit
