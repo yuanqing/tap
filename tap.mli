@@ -1,4 +1,3 @@
-val run : (t -> unit) list -> unit
 type t = {
   test : string -> (unit -> unit) -> unit;
   skip : string -> (unit -> unit) -> unit;
@@ -14,3 +13,4 @@ type t = {
   throws : 'a. ?msg:string -> exn -> (unit -> 'a) -> unit;
   does_not_throw : 'a. ?msg:string -> (unit -> 'a) -> unit;
 }
+val run : (t -> unit) list -> unit
