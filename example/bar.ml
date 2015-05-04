@@ -1,9 +1,9 @@
 open Tap;;
 
-let suite () =
+let suite t =
 
-  test "bar" (fun () ->
+  t.test "bar" (fun () ->
 
-    fail ();
+    t.fail ();
 
   );

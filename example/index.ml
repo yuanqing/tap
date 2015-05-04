@@ -1,3 +1,4 @@
 Tap.run [
-  Foo.suite
+  Foo.suite;
+  Bar.suite;
 ]

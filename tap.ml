@@ -1,41 +1,24 @@
-let _ = print_endline "TAP version 13"
+let num_test = ref 0
+let num_fail = ref 0
+let results : string Queue.t = Queue.create ()
 
 let test (name:string) (fn:unit -> unit) =
-  let _ = Printf.printf "# %s\n" name in
+  let _ = Queue.add (Printf.sprintf "# %s" name) results in
   fn ()
 
 let skip (_:string) (_:unit -> unit) =
   ()
 
-let num_test = ref 0
-let num_fail = ref 0
-
 let result (is_ok:bool) (msg:string) : unit =
-  let is_ok =
+  let r =
     if is_ok then
       "ok"
     else
       let _ = incr num_fail in
       "not ok" in
   let _ = incr num_test in
-  print_endline (String.trim (Printf.sprintf ("%s %d %s") is_ok !num_test msg))
-
-let has_exited = ref false
-
-let _ = at_exit (fun x ->
-  if !has_exited then
-    ()
-  else
-    let _ = has_exited := true in
-    let num_test = !num_test in
-    let num_fail = !num_fail in
-    let _ = Printf.printf ("1..%d\n") num_test in
-    let _ = Printf.printf ("# tests %d\n") num_test in
-    let _ = Printf.printf ("# pass  %d\n") (num_test - num_fail) in
-    let _ = Printf.printf ("# fail  %d\n") num_fail in
-    let _ = exit (if num_fail = 0 then 0 else 1) in
-    ()
-)
+  let result = String.trim (Printf.sprintf ("%s %s") r msg) in
+  Queue.add result results
 
 let ok ?(msg="ok") x =
   result (x = true) msg
@@ -61,6 +44,9 @@ let pass ?(msg="pass") () =
 let fail ?(msg="fail") () =
   result false msg
 
+let comment msg =
+  Queue.add ("# " ^ msg) results
+
 exception Not_ok
 
 let throws ?(msg="throws") (expected_exn:exn) (fn:unit -> 'a) =
@@ -83,5 +69,88 @@ let does_not_throw ?(msg="does not throw") (fn:unit -> 'a) =
     | _ ->
       result false msg
 
-let run _ =
+type t = {
+  test: string -> (unit -> unit) -> unit;
+  skip: string -> (unit -> unit) -> unit;
+  comment: string -> unit;
+  ok: ?msg:string -> bool -> unit;
+  not_ok: ?msg:string -> bool -> unit;
+  equal: 'a. ?msg:string -> 'a -> 'a -> unit;
+  not_equal: 'a. ?msg:string -> 'a -> 'a -> unit;
+  same: 'a. ?msg:string -> 'a -> 'a -> unit;
+  not_same: 'a. ?msg:string -> 'a -> 'a -> unit;
+  pass: ?msg:string -> unit -> unit;
+  fail: ?msg:string -> unit -> unit;
+  throws: 'a. ?msg:string -> exn -> (unit -> 'a) -> unit;
+  does_not_throw: 'a. ?msg:string -> (unit -> 'a) -> unit;
+}
+
+let t : t = {
+  test;
+  skip;
+  comment;
+  ok;
+  not_ok;
+  equal;
+  not_equal;
+  same;
+  not_same;
+  pass;
+  fail;
+  throws;
+  does_not_throw;
+}
+
+let run (suites:(t -> unit) list) =
+
+  let _ = print_endline "TAP version 13" in
+  let fd_in, fd_out = Unix.pipe () in
+  let _ = List.iteri (fun i suite ->
+    match Unix.fork () with
+      | 0 ->
+        let () = Unix.close fd_in in
+        let ochan = Unix.out_channel_of_descr fd_out in
+        let _ = suite t in
+        let results : string list = Queue.fold (fun acc x -> x::acc) [] results in
+        let () = Marshal.to_channel ochan (i, (!num_test, !num_fail, results)) [] in
+        exit 0
+      | _ -> ()
+  ) suites in
+
+  (* close the `fd_out` end of the pipe *)
+  let () = Unix.close fd_out in
+
+  (* read results from `ichan` *)
+  let ichan = Unix.in_channel_of_descr fd_in in
+  let results : (int * (int * int * (string list))) list = List.fold_left (fun acc _ ->
+    (Marshal.from_channel ichan)::acc
+  ) [] suites in
+
+  (* wait for each child process to end *)
+  let _ = List.iter (fun _ ->
+    ignore (Unix.wait ())
+  ) suites in
+
+  (* return results sorted based on their index in `xs` *)
+  let compare (i, _) (j, _) =
+    if i < j then (-1) else 1 in
+  let results = List.fast_sort compare results in
+  let results = List.split results in
+  let r = snd results in
+
+  let _ = List.iter (fun (_, _, r) ->
+    List.iter (fun x ->
+      print_endline x
+    ) (List.rev r)
+  ) r in
+
+  let num_test, num_fail = List.fold_left (fun acc (num_test, num_fail, _) ->
+    ((fst acc) + num_test, (snd acc) + num_fail)
+  ) (0, 0) r in
+
+  let _ = Printf.printf ("1..%d\n") num_test in
+  let _ = Printf.printf ("# tests %d\n") num_test in
+  let _ = Printf.printf ("# pass  %d\n") (num_test - num_fail) in
+  let _ = Printf.printf ("# fail  %d\n") num_fail in
+
   ()
