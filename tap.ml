@@ -10,12 +10,15 @@ let log_result (is_ok:bool) (msg:string) : unit =
 let log_comment (msg:string) : unit =
   Queue.add (Comment msg) q
 
-let test (name:string) (fn:unit -> unit) =
+let test name fn =
   let _ = log_comment name in
   fn ()
 
-let skip (_:string) (_:unit -> unit) =
+let skip _ _ =
   ()
+
+let comment (msg:string) =
+  log_comment msg
 
 let ok ?(msg="ok") x =
   log_result (x = true) msg
@@ -41,12 +44,9 @@ let pass ?(msg="pass") () =
 let fail ?(msg="fail") () =
   log_result false msg
 
-let comment (msg:string) =
-  log_comment msg
-
 exception Not_ok
 
-let throws ?(msg="throws") (expected_exn:exn) (fn:unit -> 'a) =
+let throws ?(msg="throws") expected_exn fn =
   try
     let _ = fn () in
     raise Not_ok
@@ -58,7 +58,7 @@ let throws ?(msg="throws") (expected_exn:exn) (fn:unit -> 'a) =
     | _ ->
       log_result true msg
 
-let does_not_throw ?(msg="does not throw") (fn:unit -> 'a) =
+let does_not_throw ?(msg="does not throw") fn =
   try
     let _ = fn () in
     log_result true msg
@@ -98,86 +98,104 @@ let t : t = {
   does_not_throw;
 }
 
-let run_suite (fd_out: Unix.file_descr) (suite: t -> unit) (i: int) =
+let run_suite (fd_out: Unix.file_descr) (i: int) (suite: t -> unit) : unit =
+
   (* Create an output channel that writes to `fd_out`. *)
   let ochan = Unix.out_channel_of_descr fd_out in
+
   (* Run the tests. *)
   let _ = suite t in
-  (* Convert the queue into a list and pipe it to the main process. *)
-  let tap_output : tap_output list = Queue.fold (fun acc x -> x::acc) [] q in
-  let tap_output = List.rev tap_output in
-  let () = Marshal.to_channel ochan (i, tap_output) [] in
-  (* Done. *)
-  exit 0
 
-let print_tap_output (fd_in: Unix.file_descr) (suites: (t -> unit) list) :
-    unit =
+  (* Convert the TAP output queue into a list. *)
+  let tap_output : tap_output list = Queue.fold (fun acc x -> x::acc) [] q in
+
+  (* Pipe the list to the main process. *)
+  let tap_output = List.rev tap_output in
+  Marshal.to_channel ochan (i, tap_output) []
+
+let read_tap_output (fd_in: Unix.file_descr) (suites: (t -> unit) list)
+  : tap_output list =
+
   (* Create an input channel that reads from `fd_in`. *)
   let ichan = Unix.in_channel_of_descr fd_in in
+
   (* Accumulate the TAP output from `ichan` into a list. *)
   let f acc _ =
     (Marshal.from_channel ichan)::acc in
   let tap_output : (int * tap_output list) list = List.fold_left f [] suites in
+
   (* Call `wait` on each child process. *)
   let f _ =
     let _ = Unix.wait () in
     () in
   let _ = List.iter f suites in
-  (* Sort the TAP output by index. *)
+
+  (* Sort the TAP output by their original order. *)
   let compare (i, _) (j, _) =
     if i < j then (-1) else 1 in
   let tap_output = List.fast_sort compare tap_output in
-  (* Splice out the TAP output. *)
-  let tap_output = (List.split tap_output) in
-  let tap_output = snd tap_output in
-  (* Concatenate the list of lists. *)
-  let tap_output = List.concat tap_output in
+
+  (* Splice out the TAP output, and concatenate the list of lists. *)
+  List.split tap_output |> snd |> List.concat
+
+let print_tap_output (tap_output:tap_output list) : unit =
+
   (* Print the TAP version. *)
   let _ = print_endline "TAP version 13" in
-  (* Print the tap_output, and also update the `num_test` and `num_fail`
-  counts. *)
+
+  (* Iterate over and print `tap_output`, while also updating the counts for
+  `num_test` and `num_fail`. *)
   let num_test = ref 0 in
   let num_fail = ref 0 in
   let f x =
-    match x with
-      | Result (is_ok, msg) ->
-        let _ = incr num_test in
-        let is_ok =
-          if is_ok then
-            "ok"
-          else
-            let _ = incr num_fail in
-            "not ok" in
-        let str = Printf.sprintf "%s %d %s\n" is_ok !num_test msg in
-        print_endline (String.trim str)
-      | Comment str ->
-        let str = Printf.sprintf "# %s\n" str in
-        print_endline (String.trim str) in
+    let str =
+      match x with
+        | Result (is_ok, msg) ->
+          let _ = incr num_test in
+          let is_ok =
+            if is_ok then
+              "ok"
+            else
+              let _ = incr num_fail in
+              "not ok" in
+          Printf.sprintf "%s %d %s\n" is_ok !num_test msg
+        | Comment str ->
+          Printf.sprintf "# %s\n" str in
+    print_endline (String.trim str) in
   let _ = List.iter f tap_output in
-  (* Print test summaries. *)
+
+  (* Print the summary. *)
   let num_test = !num_test in
   let num_fail = !num_fail in
   let _ = Printf.printf ("1..%d\n") num_test in
   let _ = Printf.printf ("# test %d\n") num_test in
   let _ = Printf.printf ("# pass %d\n") (num_test - num_fail) in
   let _ = Printf.printf ("# fail %d\n") num_fail in
-  (* Exit with code 1 if some assertion failed. *)
+
+  (* Exit with code 0 if no failures, else exit with code 1. *)
   let _ = exit (if num_fail = 0 then 0 else 1) in
   ()
 
 let run (suites:(t -> unit) list) =
+
   (* Create a pipe with `fd_in` and `fd_out` for sending TAP output from
-  child processes (ie. each suite) to the parent process. *)
+  each child processes (ie. each test suite in `suites`) to the main
+  process (ie. the current process). *)
   let fd_in, fd_out = Unix.pipe () in
+
+  (* Fork a new process for each test suite, run the test suite, and exit. *)
   let _ = List.iteri (fun i suite ->
-    (* Spawn a new process for each suite, and run the suite. *)
     match Unix.fork () with
       | 0 ->
-        (* Close the `fd_in` end of the pipe. *)
         let () = Unix.close fd_in in
-        run_suite fd_out suite i
-      | _ -> ()
+        let () = run_suite fd_out i suite in
+        exit 0
+      | _ ->
+        ()
   ) suites in
-  (* Close the `fd_out` end of the pipe. *)
+
+  (* In the main process, read the TAP output from each test suite, and
+  print it to `stdout`. *)
   let () = Unix.close fd_out in
-  print_tap_output fd_in suites
+  let tap_output = read_tap_output fd_in suites in
+  print_tap_output tap_output
