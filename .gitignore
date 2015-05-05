@@ -1,8 +1,7 @@
 .DS_Store
+*.a
 *.annot
-*.cache
+*.byte
 *.cm*
-*.log
 *.o
 *.out
-coverage/
