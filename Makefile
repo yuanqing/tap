@@ -1,22 +1,32 @@
-OO := ocamlfind ocamlopt -g
+OFIND := ocamlfind
+OC := $(OFIND) ocamlc
+OOPT := $(OFIND) ocamlopt
 
-all: example.out
-	./$<
+INSTALL := META tap.mli tap.cmi tap.cmo tap.cma tap.cmx tap.cmxa tap.a
+
+all: $(INSTALL)
 
 tap.cmi: tap.mli
-	$(OO) -c $<
+	$(OC) -c $<
 
+# byte
+tap.cmo: tap.ml tap.cmi
+	$(OC) -c $<
+tap.cma: tap.cmo
+	$(OC) -a -o $@ $<
+
+# native
 tap.cmx: tap.ml tap.cmi
-	$(OO) -annot -c $<
-
-example/%.cmx: example/%.ml tap.cmx
-	$(OO) -annot -c unix.cmxa $<
-
-example.out: tap.cmx example/foo.cmx example/bar.cmx example/index.ml
-	$(OO) -I example unix.cmxa $^ -o $@
+	$(OOPT) -c $<
+tap.cmxa: tap.cmx
+	$(OOPT) -a -o $@ $<
 
 clean:
-	rm -f *.annot *.cm* *.o *.out
-	rm -f example/*.annot example/*.cm* example/*.mli example/*.o
+	rm -f *.a *.cm* *.o
 
-.PHONY: all clean
+install: $(INSTALL)
+	$(OFIND) install tap $^
+uninstall:
+	$(OFIND) remove tap
+
+.PHONY: all clean install uninstall
