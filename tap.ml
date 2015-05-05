@@ -2,13 +2,13 @@ type tap_output =
   | Result of bool * string
   | Comment of string
 
-let q : tap_output Queue.t = Queue.create ()
+let tap_output : tap_output Queue.t = Queue.create ()
 
 let log_result (is_ok:bool) (msg:string) : unit =
-  Queue.add (Result (is_ok, msg)) q
+  Queue.add (Result (is_ok, msg)) tap_output
 
 let log_comment (msg:string) : unit =
-  Queue.add (Comment msg) q
+  Queue.add (Comment msg) tap_output
 
 let test name fn =
   let _ = log_comment name in
@@ -17,7 +17,7 @@ let test name fn =
 let skip _ _ =
   ()
 
-let comment (msg:string) =
+let comment msg =
   log_comment msg
 
 let ok ?(msg="ok") x =
@@ -98,7 +98,7 @@ let t : t = {
   does_not_throw;
 }
 
-let run_suite (fd_out: Unix.file_descr) (i: int) (suite: t -> unit) : unit =
+let run_suite (fd_out:Unix.file_descr) (i:int) (suite:t -> unit) : unit =
 
   (* Create an output channel that writes to `fd_out`. *)
   let ochan = Unix.out_channel_of_descr fd_out in
@@ -107,13 +107,14 @@ let run_suite (fd_out: Unix.file_descr) (i: int) (suite: t -> unit) : unit =
   let _ = suite t in
 
   (* Convert the TAP output queue into a list. *)
-  let tap_output : tap_output list = Queue.fold (fun acc x -> x::acc) [] q in
+  let tap_output : tap_output list = Queue.fold (fun acc x -> x::acc) []
+    tap_output in
 
   (* Pipe the list to the main process. *)
   let tap_output = List.rev tap_output in
   Marshal.to_channel ochan (i, tap_output) []
 
-let read_tap_output (fd_in: Unix.file_descr) (suites: (t -> unit) list)
+let read_tap_output (fd_in:Unix.file_descr) (suites:(t -> unit) list)
   : tap_output list =
 
   (* Create an input channel that reads from `fd_in`. *)
@@ -176,7 +177,7 @@ let print_tap_output (tap_output:tap_output list) : unit =
   let _ = exit (if num_fail = 0 then 0 else 1) in
   ()
 
-let run (suites:(t -> unit) list) =
+let run (suites:(t -> unit) list) : unit =
 
   (* Create a pipe with `fd_in` and `fd_out` for sending TAP output from
   each child processes (ie. each test suite in `suites`) to the main
