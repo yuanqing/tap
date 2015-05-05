@@ -1,0 +1,35 @@
+TAP version 13
+# pass
+ok 1 pass
+# fail
+not ok 2 fail
+# ok
+ok 3 ok
+not ok 4 ok
+# not ok
+ok 5 not ok
+not ok 6 not ok
+# equal
+ok 7 equal
+not ok 8 equal
+# not equal
+ok 9 not equal
+not ok 10 not equal
+# same
+ok 11 same
+not ok 12 same
+# not same
+ok 13 not same
+not ok 14 not same
+# throws
+ok 15 throws
+not ok 16 throws
+# does not throw
+ok 17 does not throw
+not ok 18 does not throw
+# comment
+# comment
+1..18
+# test 18
+# pass 9
+# fail 9

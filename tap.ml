@@ -17,8 +17,11 @@ let test name fn =
 let skip _ _ =
   ()
 
-let comment msg =
-  log_comment msg
+let pass ?(msg="pass") () =
+  log_result true msg
+
+let fail ?(msg="fail") () =
+  log_result false msg
 
 let ok ?(msg="ok") x =
   log_result (x = true) msg
@@ -37,12 +40,6 @@ let same ?(msg="same") x y =
 
 let not_same ?(msg="not same") x y =
   log_result (x != y) msg
-
-let pass ?(msg="pass") () =
-  log_result true msg
-
-let fail ?(msg="fail") () =
-  log_result false msg
 
 exception Not_ok
 
@@ -66,20 +63,23 @@ let does_not_throw ?(msg="does not throw") fn =
     | _ ->
       log_result false msg
 
+let comment msg =
+  log_comment msg
+
 type t = {
   test : string -> (unit -> unit) -> unit;
   skip : string -> (unit -> unit) -> unit;
-  comment : string -> unit;
+  pass : ?msg:string -> unit -> unit;
+  fail : ?msg:string -> unit -> unit;
   ok : ?msg:string -> bool -> unit;
   not_ok : ?msg:string -> bool -> unit;
   equal : 'a. ?msg:string -> 'a -> 'a -> unit;
   not_equal : 'a. ?msg:string -> 'a -> 'a -> unit;
   same : 'a. ?msg:string -> 'a -> 'a -> unit;
   not_same : 'a. ?msg:string -> 'a -> 'a -> unit;
-  pass : ?msg:string -> unit -> unit;
-  fail : ?msg:string -> unit -> unit;
   throws : 'a. ?msg:string -> exn -> (unit -> 'a) -> unit;
   does_not_throw : 'a. ?msg:string -> (unit -> 'a) -> unit;
+  comment : string -> unit;
 }
 
 let t : t = {
