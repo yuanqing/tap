@@ -1,4 +1,4 @@
-# tap [![Build Status](https://img.shields.io/travis/yuanqing/tap.svg?branch=master&style=flat)](https://travis-ci.org/yuanqing/tap)
+# tap [![Version](https://img.shields.io/badge/version-v0.1.0-orange.svg?style=flat)](https://github.com/yuanqing/tap/releases) [![Build Status](https://img.shields.io/travis/yuanqing/tap.svg?branch=master&style=flat)](https://travis-ci.org/yuanqing/tap)
 
 > A simple, [TAP](http://testanything.org/)-compliant test harness for OCaml.
 
