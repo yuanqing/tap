@@ -69,8 +69,6 @@ let comment msg =
 type t = {
   test : string -> (unit -> unit) -> unit;
   skip : string -> (unit -> unit) -> unit;
-  pass : ?msg:string -> unit -> unit;
-  fail : ?msg:string -> unit -> unit;
   ok : ?msg:string -> bool -> unit;
   not_ok : ?msg:string -> bool -> unit;
   equal : 'a. ?msg:string -> 'a -> 'a -> unit;
@@ -80,22 +78,24 @@ type t = {
   throws : 'a. ?msg:string -> exn -> (unit -> 'a) -> unit;
   does_not_throw : 'a. ?msg:string -> (unit -> 'a) -> unit;
   comment : string -> unit;
+  pass : ?msg:string -> unit -> unit;
+  fail : ?msg:string -> unit -> unit;
 }
 
 let t : t = {
   test;
   skip;
-  comment;
   ok;
   not_ok;
   equal;
   not_equal;
   same;
   not_same;
-  pass;
-  fail;
   throws;
   does_not_throw;
+  comment;
+  pass;
+  fail;
 }
 
 let run_suite (fd_out:Unix.file_descr) (i:int) (suite:t -> unit) : unit =

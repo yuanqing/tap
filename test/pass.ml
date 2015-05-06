@@ -1,4 +1,4 @@
-open Tap;;
+open Tap
 
 let suite t = (
 
