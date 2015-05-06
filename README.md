@@ -55,7 +55,9 @@ ok 8 does not throw
 # fail 0
 ```
 
-The program exits with code 0 if and only if all tests pass:
+(We can also compile using the `ocamlopt` native-code compiler; see [the example Makefile](https://github.com/yuanqing/tap/blob/master/example/Makefile).)
+
+The test run exits with code 0 if and only if every test passed:
 
 ```
 $ echo $?
