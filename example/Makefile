@@ -1,22 +1,12 @@
-OFIND := ocamlfind
-OC := $(OFIND) ocamlc
-OOPT := $(OFIND) ocamlopt
+.PHONY: all
+all: example.byte example.out
 
-all: test.byte test.out
+example.byte: example.ml
+	ocamlfind ocamlc -package tap -linkpkg $^ -o $@
 
-# byte
-%.cmo: %.ml
-	$(OC) -package tap -c $<
-test.byte: foo.cmo bar.cmo index.ml
-	$(OC) -package tap -linkpkg $^ -o $@
+example.out: example.ml
+	ocamlfind ocamlopt -package tap -linkpkg $^ -o $@
 
-# native
-%.cmx: %.ml
-	$(OOPT) -package tap -c $<
-test.out: foo.cmx bar.cmx index.ml
-	$(OOPT) -package tap -linkpkg $^ -o $@
-
+.PHONY: clean
 clean:
 	rm -f *.byte *.cm* *.o *.out
-
-.PHONY: all clean
