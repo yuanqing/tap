@@ -101,6 +101,11 @@ $ cd tap
 $ make install
 ```
 
+## Changelog
+
+- 0.1.0
+  - Initial release
+
 ## License
 
 [MIT](https://github.com/yuanqing/tap/blob/master/LICENSE)
