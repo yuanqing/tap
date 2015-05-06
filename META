@@ -1,6 +1,6 @@
 name = "tap"
 version = "0.1.0"
 description = "A simple, TAP-compliant test harness for OCaml"
-requires = "unix"
+requires = "unix,ocamlfind"
 archive(byte) = "tap.cma"
 archive(native) = "tap.cmxa"
